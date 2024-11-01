@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reaktionstest</title>
+    <style>
+        body {
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #f0f0f0;
+            font-family: Arial, sans-serif;
+        }
+
+        #test-container {
+            position: relative;
+            width: 600px;
+            height: 400px;
+            background-color: white;
+            border: 2px solid #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        #arrow {
+            font-size: 4em;
+            visibility: hidden;
+            margin: 20px 0;
+        }
+
+        #message {
+            margin: 20px;
+            text-align: center;
+            min-height: 60px;
+        }
+
+        #stats {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+        }
+
+        .button {
+            padding: 15px 30px;
+            margin: 10px;
+            font-size: 1.2em;
+            cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+
+        .button:hover {
+            background-color: #45a049;
+        }
+
+        .instruction {
+            padding: 20px;
+            text-align: center;
+            font-size: 1.2em;
+        }
+    </style>
+</head>
+<body>
+    <div id="test-container">
+        <div id="stats"></div>
+        <div id="arrow">↓</div>
+        <div id="message"></div>
+        <button id="start-button" class="button" onclick="startTest()">Start</button>
+        <button id="down-button" class="button" style="display: none;" onclick="handleResponse()">Nach unten</button>
+    </div>
+
+    <script>
+        let isTestRunning = false;
+        let currentPhase = 'instruction';
+        let trialCount = 0;
+        let startTime = 0;
+        let reactionTimes = [];
+        let errors = 0;
+        let stimulusShown = false;
+
+        function startTest() {
+            document.getElementById('start-button').style.display = 'none';
+            document.getElementById('down-button').style.display = 'block';
+            document.getElementById('message').textContent = "Warten Sie auf den Pfeil...";
+            isTestRunning = true;
+            trialCount = 0;
+            reactionTimes = [];
+            errors = 0;
+            currentPhase = 'practice';
+            showNextStimulus();
+        }
+
+        function showNextStimulus() {
+            if (!isTestRunning) return;
+
+            stimulusShown = false;
+            document.getElementById('arrow').style.visibility = 'hidden';
+            
+            // Zufälliges Intervall zwischen 1.5 und 4 Sekunden
+            const delay = Math.random() * 2500 + 1500;
+            
+            setTimeout(() => {
+                if (isTestRunning) {
+                    document.getElementById('arrow').style.visibility = 'visible';
+                    startTime = Date.now();
+                    stimulusShown = true;
+                }
+            }, delay);
+        }
+
+        function handleResponse() {
+            if (!isTestRunning) return;
+
+            if (!stimulusShown) {
+                errors++;
+                document.getElementById('message').textContent = "Zu früh! Warten Sie auf den Pfeil.";
+                return;
+            }
+
+            const reactionTime = Date.now() - startTime;
+            reactionTimes.push(reactionTime);
+            trialCount++;
+
+            if (currentPhase === 'practice') {
+                if (trialCount < 5) {
+                    document.getElementById('message').textContent = 
+                        `Übungsphase: ${trialCount}/5 - Reaktionszeit: ${reactionTime}ms`;
+                    showNextStimulus();
+                } else {
+                    currentPhase = 'test';
+                    trialCount = 0;
+                    document.getElementById('message').textContent = 
+                        "Übungsphase beendet. Testphase beginnt!";
+                    setTimeout(showNextStimulus, 1500);
+                }
+            } else if (currentPhase === 'test') {
+                if (trialCount < 10) {
+                    document.getElementById('message').textContent = 
+                        `Test: ${trialCount}/10 - Reaktionszeit: ${reactionTime}ms`;
+                    showNextStimulus();
+                } else {
+                    endTest();
+                }
+            }
+        }
+
+        function endTest() {
+            isTestRunning = false;
+            document.getElementById('arrow').style.visibility = 'hidden';
+            document.getElementById('down-button').style.display = 'none';
+            document.getElementById('start-button').style.display = 'block';
+            
+            const averageTime = reactionTimes.reduce((a, b) => a + b, 0) / reactionTimes.length;
+            document.getElementById('message').textContent = 
+                `Test beendet!\nDurchschnittliche Reaktionszeit: ${averageTime.toFixed(0)}ms\nFehler: ${errors}`;
+        }
+
+        // Tastatursteuerung hinzufügen
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'ArrowDown') {
+                handleResponse();
+            }
+        });
+    </script>
+</body>
+</html>
